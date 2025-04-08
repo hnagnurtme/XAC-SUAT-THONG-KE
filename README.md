@@ -1,4 +1,4 @@
-# Biểu đồ Histogram với Đường Dóng Ngang từ Dữ Liệu CSV
+# Biểu đồ Histogram 
 
 Đoạn mã Python này đọc dữ liệu số (ví dụ: chiều dài cơ thể bọ cánh cứng) từ tệp `data.csv`, tự động tính toán các khoảng bin của biểu đồ histogram, và vẽ biểu đồ với các đường dóng ngang qua từng cột. Biểu đồ được thiết kế để vừa dễ hiểu vừa rõ ràng, giúp người dùng phân tích dữ liệu dễ dàng hơn.
 
@@ -29,6 +29,9 @@
     python your_script.py
     ```
     Mã sẽ đọc dữ liệu từ `data.csv`, tính toán các khoảng bin, và vẽ biểu đồ histogram với các đường dóng ngang.
+4. **Kết quả**
+   <img width="759" alt="image" src="https://github.com/user-attachments/assets/006832b6-f64d-440c-8ddf-0e9d2b884e38" />
+
 
 ## 🛠️ Cấu Trúc Mã
 
