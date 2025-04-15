@@ -3,7 +3,7 @@ import numpy as np
 import math
 import csv
 data = []
-with open('data3.csv', 'r') as file:
+with open('data.csv', 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         if row:
@@ -26,7 +26,7 @@ def calculate_bin_edges(data):
     max_val = max(data)
 
     value = (max_val - min_val) / num_bins
-    d = math.ceil(value * 100) / 100  # Làm tròn lên đến 2 chữ số thập phâ
+    d = math.ceil(value * 100) / 100  # Làm tròn lên đến 2 chữ số thập phân
     print(f"Khoảng cách giữa các bins: {d}")
 
     # Tạo bin edges từ desired_range_min đến desired_range_max
@@ -55,15 +55,17 @@ def plot_histogram(data, bin_edges):
         # Dựng một đường ngang tại tần số của cột với màu sắc đẹp
         plt.plot([bins[i], bins[i+1]], [n[i], n[i]], color='purple', linewidth=1.5, linestyle='--')
 
-    # Thêm các nhãn vào cột và làm tròn đến 2 chữ số thập phân
+    # Thêm các nhãn vào cột - hiển thị số nguyên nếu là số nguyên hoặc số thập phân nếu cần
     for i in range(len(patches)):
         height = patches[i].get_height()
-        plt.annotate(f'{height:.2f}',
+        # Hiển thị giá trị nguyên nếu height là số nguyên, ngược lại hiển thị 2 chữ số thập phân
+        label = f'{int(height)}' if height.is_integer() else f'{height:.2f}'
+        plt.annotate(label,
                      xy=(patches[i].get_x() + patches[i].get_width() / 2, height),
                      ha='center', va='bottom', fontsize=10, color='darkblue')
 
     # Thiết lập các mốc trên trục x và làm tròn các giá trị bin edges đến 2 chữ số thập phân
-    plt.xticks(bin_edges, rotation=0)
+    plt.xticks(bin_edges, rotation=45)  # Xoay 45 độ để tránh chồng chéo khi có nhiều bins
 
     # Tăng cường hiệu ứng bóng cho các cột histogram
     for patch in patches:
@@ -72,7 +74,7 @@ def plot_histogram(data, bin_edges):
         patch.set_linewidth(1.5)  # Đặt độ rộng viền
 
     # Thiết lập tiêu đề và nhãn với phông chữ lớn hơn
-    plt.title('Biểu đồ tần số chiều dài bọ cánh cứng ', fontsize=14)
+    plt.title('Biểu đồ tần số chiều dài bọ cánh cứng', fontsize=14)
     plt.xlabel('Chiều dài (mm)', fontsize=12)
     plt.ylabel('Tần số', fontsize=12)
 
