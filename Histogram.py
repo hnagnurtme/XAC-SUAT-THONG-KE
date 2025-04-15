@@ -1,9 +1,8 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import math
 import csv
 data = []
-with open('data.csv', 'r') as file:
+with open('data2.csv', 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         if row:

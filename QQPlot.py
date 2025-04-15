@@ -39,5 +39,7 @@ def draw_qq_plot(data):
 
 # Đọc dữ liệu và vẽ
 filename = 'data.csv'
+# filename = 'data-QQPlot2.csv'
+# filename = 'data-QQPlot3.csv'
 data = read_data(filename)
 draw_qq_plot(data)
