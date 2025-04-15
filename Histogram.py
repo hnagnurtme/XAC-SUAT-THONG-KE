@@ -2,28 +2,45 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import csv
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+data = []
+with open('data3.csv', 'r') as file:
+    reader = csv.reader(file)
+    for row in reader:
+        if row:
+            try:
+                data.append(float(row[0]))
+            except ValueError:
+                continue
 
-def calculate_bin_edges(data, num_bins=7):
+def calculate_bin_edges(data):
     """
-    Tính toán các bin_edges tự động từ dữ liệu, chia phạm vi thành số bin cụ thể.
+    Tính toán bin edges tự động cho histogram.
     
     :param data: Dữ liệu đầu vào.
-    :param num_bins: Số lượng bins (khoảng), mặc định là 7.
-    :return: List các bin_edges.
+    :return: List các bin edges.
     """
+    num_bins = math.floor(math.sqrt(len(data)))  # Số lượng bins dựa trên số lượng dữ liệu
+    print(f"Số lượng bins: {num_bins}")
+    # Lấy giá trị nhỏ nhất và lớn nhất từ dữ liệu
     min_val = min(data)
     max_val = max(data)
-    
-    # Sử dụng np.linspace để tạo ra num_bins khoảng đều nhau giữa min_val và max_val
-    bin_edges = np.linspace(min_val, max_val, num_bins + 1)  # num_bins + 1 vì bao gồm cả điểm cuối
 
-    # Làm tròn các bin_edges đến 2 chữ số thập phân
-    bin_edges = np.round(bin_edges, 2)
+    value = (max_val - min_val) / num_bins
+    d = math.ceil(value * 100) / 100  # Làm tròn lên đến 2 chữ số thập phâ
+    print(f"Khoảng cách giữa các bins: {d}")
+
+    # Tạo bin edges từ desired_range_min đến desired_range_max
+    bin_edges = [min_val + i * d for i in range(num_bins + 1)]
+
+    # Làm tròn đến 2 chữ số thập phân
+    bin_edges = [round(edge, 2) for edge in bin_edges]
+
     return bin_edges
 
-def plot_histogram_with_horizontal_lines(data, bin_edges):
+
+bin_edges = calculate_bin_edges(data)
+
+def plot_histogram(data, bin_edges):
     """
     Vẽ biểu đồ histogram với các đường dóng ngang qua mỗi cột.
     
@@ -55,7 +72,7 @@ def plot_histogram_with_horizontal_lines(data, bin_edges):
         patch.set_linewidth(1.5)  # Đặt độ rộng viền
 
     # Thiết lập tiêu đề và nhãn với phông chữ lớn hơn
-    plt.title('Biểu đồ tần số chiều dài bọ cánh cứng với các đường dóng ngang', fontsize=14)
+    plt.title('Biểu đồ tần số chiều dài bọ cánh cứng ', fontsize=14)
     plt.xlabel('Chiều dài (mm)', fontsize=12)
     plt.ylabel('Tần số', fontsize=12)
 
@@ -63,20 +80,6 @@ def plot_histogram_with_horizontal_lines(data, bin_edges):
     plt.tight_layout()
     plt.show()
 
-# Dữ liệu chiều dài các con bọ cánh cứng lay tu data.csv
-data = []
-with open('data.csv', 'r') as file:
-    reader = csv.reader(file)
-    for row in reader:
-        data.append(float(row[0]))  # Chỉ lấy cột đầu tiên (chiều dài)
 
-
-
-# Tính num_bins tự động từ dữ liệu
-num_bins = math.ceil(math.sqrt(len(data)))  # Số lượng bins tự động theo quy tắc Sturges
-
-# Tính toán các khoảng bin tự động từ dữ liệu
-bin_edges = calculate_bin_edges(data, num_bins)
-
-# Gọi hàm để vẽ histogram với các đường dóng ngang
-plot_histogram_with_horizontal_lines(data, bin_edges)
+# Gọi hàm để vẽ histogram
+plot_histogram(data, bin_edges)
