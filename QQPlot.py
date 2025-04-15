@@ -30,14 +30,14 @@ def draw_qq_plot(data):
     plt.plot(theoretical_quantiles, line, 'r--', label='Đường chéo lý thuyết: x = μz + σ')
 
     # Trang trí
-    plt.xlabel('Quantile lý thuyết (z)')
-    plt.ylabel('Giá trị thực tế (x)')
-    plt.title('Q-Q Plot theo phân phối chuẩn N(μ, σ²)')
+    plt.xlabel('(z)')
+    plt.ylabel('(x)')
+    plt.title('Biểu đồ xác suất chuẩn')
     plt.grid(True)
     plt.legend()
     plt.show()
 
 # Đọc dữ liệu và vẽ
-filename = 'data.csv'
+filename = 'data2.csv'
 data = read_data(filename)
 draw_qq_plot(data)
