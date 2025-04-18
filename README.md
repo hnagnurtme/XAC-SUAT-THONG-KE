@@ -203,13 +203,19 @@ The API defines several schemas for request and response bodies. Key schemas inc
 - **ResultPagingDTO**: Used for paginated responses, containing `meta` (page, size, total) and `data`.
 
 ## Example Usage
-### Register a New User
+
+### Authentication Controller
+
+#### Register a New User
 ```bash
 curl -X POST http://localhost:8080/register \
 -H "Content-Type: application/json" \
 -d '{
   "email": "user@example.com",
-  "password": "Password123"
+  "password": "Password123",
+  "name": "John Doe",
+  "gender": "MALE",
+  "dateOfBirth": "1990-01-01"
 }'
 ```
 **Response**:
@@ -219,11 +225,14 @@ curl -X POST http://localhost:8080/register \
   "email": "user@example.com",
   "emailConfirmed": false,
   "emailConfirmationToken": "abc123",
-  "roles": ["USER"]
+  "roles": ["USER"],
+  "name": "John Doe",
+  "gender": "MALE",
+  "dateOfBirth": "1990-01-01"
 }
 ```
 
-### Login
+#### Login
 ```bash
 curl -X POST http://localhost:8080/login \
 -H "Content-Type: application/json" \
@@ -245,7 +254,590 @@ curl -X POST http://localhost:8080/login \
 }
 ```
 
-### Create a Booking
+#### Refresh Token
+```bash
+curl -X POST http://localhost:8080/refresh-token \
+-H "Content-Type: application/json" \
+-d '{
+  "refreshToken": "xyz789"
+}'
+```
+**Response**:
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzUxMiJ9.newToken...",
+  "refreshToken": "abc456"
+}
+```
+
+#### Reset Password
+```bash
+curl -X POST http://localhost:8080/reset-password \
+-H "Content-Type: application/json" \
+-d '{
+  "email": "user@example.com",
+  "resetToken": "rst123",
+  "newPassword": "NewPassword456"
+}'
+```
+**Response**:
+```json
+{
+  "message": "Password reset successfully"
+}
+```
+
+### User Controller
+
+#### Get All Users
+```bash
+curl -X GET http://localhost:8080/users?page=1&size=10 \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**:
+```json
+{
+  "meta": {
+    "page": 1,
+    "size": 10,
+    "total": 25
+  },
+  "data": [
+    {
+      "id": 1,
+      "email": "user1@example.com",
+      "name": "John Doe",
+      "gender": "MALE",
+      "dateOfBirth": "1990-01-01",
+      "roles": ["USER"]
+    },
+    {
+      "id": 2,
+      "email": "user2@example.com",
+      "name": "Jane Smith",
+      "gender": "FEMALE",
+      "dateOfBirth": "1992-05-15",
+      "roles": ["USER"]
+    }
+  ]
+}
+```
+
+#### Get User by ID
+```bash
+curl -X GET http://localhost:8080/users/1 \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**:
+```json
+{
+  "id": 1,
+  "email": "user1@example.com",
+  "name": "John Doe",
+  "gender": "MALE",
+  "dateOfBirth": "1990-01-01",
+  "roles": ["USER"]
+}
+```
+
+#### Update User
+```bash
+curl -X PUT http://localhost:8080/users \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "id": 1,
+  "name": "John Doe Updated",
+  "gender": "MALE",
+  "dateOfBirth": "1990-01-01",
+  "avatar": "https://example.com/avatar.jpg"
+}'
+```
+**Response**:
+```json
+{
+  "id": 1,
+  "email": "user1@example.com",
+  "name": "John Doe Updated",
+  "gender": "MALE",
+  "dateOfBirth": "1990-01-01",
+  "avatar": "https://example.com/avatar.jpg",
+  "roles": ["USER"]
+}
+```
+
+#### Update User Roles
+```bash
+curl -X PUT http://localhost:8080/users/roles \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "userId": 1,
+  "roleIds": [1, 2]
+}'
+```
+**Response**:
+```json
+{
+  "id": 1,
+  "email": "user1@example.com",
+  "name": "John Doe",
+  "gender": "MALE",
+  "dateOfBirth": "1990-01-01",
+  "roles": ["USER", "ADMIN"]
+}
+```
+
+#### Delete User
+```bash
+curl -X DELETE http://localhost:8080/users/1 \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**: HTTP 204 No Content
+
+### Role Controller
+
+#### Get All Roles
+```bash
+curl -X GET http://localhost:8080/roles \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**:
+```json
+[
+  {
+    "id": 1,
+    "name": "USER",
+    "description": "Regular user role"
+  },
+  {
+    "id": 2,
+    "name": "ADMIN",
+    "description": "Administrator role"
+  },
+  {
+    "id": 3,
+    "name": "MODERATOR",
+    "description": "Moderator role"
+  }
+]
+```
+
+#### Create Role
+```bash
+curl -X POST http://localhost:8080/roles \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "name": "MANAGER",
+  "description": "Manager role"
+}'
+```
+**Response**:
+```json
+{
+  "id": 4,
+  "name": "MANAGER",
+  "description": "Manager role"
+}
+```
+
+#### Update Role
+```bash
+curl -X PUT http://localhost:8080/roles \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "id": 4,
+  "name": "MANAGER",
+  "description": "Updated manager role description"
+}'
+```
+**Response**:
+```json
+{
+  "id": 4,
+  "name": "MANAGER",
+  "description": "Updated manager role description"
+}
+```
+
+#### Delete Role
+```bash
+curl -X DELETE http://localhost:8080/roles/4 \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**: HTTP 204 No Content
+
+### Permission Controller
+
+#### Get All Permissions
+```bash
+curl -X GET http://localhost:8080/permissions?search=user \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**:
+```json
+{
+  "meta": {
+    "page": 1,
+    "size": 20,
+    "total": 3
+  },
+  "data": [
+    {
+      "id": 1,
+      "name": "VIEW_USERS",
+      "apiPath": "/users",
+      "method": "GET",
+      "module": "USER"
+    },
+    {
+      "id": 2,
+      "name": "CREATE_USER",
+      "apiPath": "/users",
+      "method": "POST",
+      "module": "USER"
+    },
+    {
+      "id": 3,
+      "name": "DELETE_USER",
+      "apiPath": "/users/{id}",
+      "method": "DELETE",
+      "module": "USER"
+    }
+  ]
+}
+```
+
+#### Create Permission
+```bash
+curl -X POST http://localhost:8080/permissions \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "name": "UPDATE_USER",
+  "apiPath": "/users",
+  "method": "PUT",
+  "module": "USER"
+}'
+```
+**Response**:
+```json
+{
+  "id": 4,
+  "name": "UPDATE_USER",
+  "apiPath": "/users",
+  "method": "PUT",
+  "module": "USER"
+}
+```
+
+#### Update Permission
+```bash
+curl -X PUT http://localhost:8080/permissions \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "id": 4,
+  "name": "UPDATE_USER_PROFILE",
+  "apiPath": "/users",
+  "method": "PUT",
+  "module": "USER"
+}'
+```
+**Response**:
+```json
+{
+  "id": 4,
+  "name": "UPDATE_USER_PROFILE",
+  "apiPath": "/users",
+  "method": "PUT",
+  "module": "USER"
+}
+```
+
+#### Delete Permission
+```bash
+curl -X DELETE http://localhost:8080/permissions/4 \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**: HTTP 204 No Content
+
+### Product Controller
+
+#### Get Public Products
+```bash
+curl -X GET "http://localhost:8080/api/public/products?page=1&size=10&categoryId=2&searchName=cleaning"
+```
+**Response**:
+```json
+{
+  "meta": {
+    "page": 1,
+    "size": 10,
+    "total": 5
+  },
+  "data": [
+    {
+      "id": 1,
+      "name": "Basic Cleaning Service",
+      "description": "Standard home cleaning service",
+      "price": 25.0,
+      "discount": 0,
+      "categoryId": 2,
+      "images": ["https://example.com/cleaning1.jpg"],
+      "averageRating": 4.5
+    },
+    {
+      "id": 2,
+      "name": "Deep Cleaning Service",
+      "description": "Thorough deep cleaning for your home",
+      "price": 40.0,
+      "discount": 5,
+      "categoryId": 2,
+      "images": ["https://example.com/cleaning2.jpg"],
+      "averageRating": 4.8
+    }
+  ]
+}
+```
+
+#### Get Product by ID
+```bash
+curl -X GET http://localhost:8080/api/public/products/1
+```
+**Response**:
+```json
+{
+  "id": 1,
+  "name": "Basic Cleaning Service",
+  "description": "Standard home cleaning service",
+  "price": 25.0,
+  "discount": 0,
+  "categoryId": 2,
+  "images": ["https://example.com/cleaning1.jpg"],
+  "averageRating": 4.5,
+  "reviewDTOs": [
+    {
+      "id": 1,
+      "rating": 5,
+      "comment": "Great service!",
+      "createdAt": "2023-01-15T10:30:00",
+      "userDTO": {
+        "id": 1,
+        "name": "John Doe"
+      }
+    },
+    {
+      "id": 2,
+      "rating": 4,
+      "comment": "Very good service",
+      "createdAt": "2023-01-20T14:15:00",
+      "userDTO": {
+        "id": 2,
+        "name": "Jane Smith"
+      }
+    }
+  ]
+}
+```
+
+#### Create Product
+```bash
+curl -X POST http://localhost:8080/api/products \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "name": "Premium Cleaning Service",
+  "description": "Top-tier cleaning service with special care",
+  "price": 60.0,
+  "discount": 10,
+  "categoryId": 2,
+  "images": ["https://example.com/premium-cleaning.jpg"]
+}'
+```
+**Response**:
+```json
+{
+  "id": 3,
+  "name": "Premium Cleaning Service",
+  "description": "Top-tier cleaning service with special care",
+  "price": 60.0,
+  "discount": 10,
+  "categoryId": 2,
+  "images": ["https://example.com/premium-cleaning.jpg"],
+  "averageRating": 0
+}
+```
+
+#### Update Product
+```bash
+curl -X PUT http://localhost:8080/api/products \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "id": 3,
+  "name": "Premium Cleaning Service Plus",
+  "description": "Enhanced premium cleaning service",
+  "price": 70.0,
+  "discount": 15,
+  "categoryId": 2
+}'
+```
+**Response**:
+```json
+{
+  "id": 3,
+  "name": "Premium Cleaning Service Plus",
+  "description": "Enhanced premium cleaning service",
+  "price": 70.0,
+  "discount": 15,
+  "categoryId": 2,
+  "images": ["https://example.com/premium-cleaning.jpg"],
+  "averageRating": 0
+}
+```
+
+#### Delete Product
+```bash
+curl -X DELETE http://localhost:8080/api/products/3 \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**: HTTP 204 No Content
+
+#### Upload Product Image
+```bash
+curl -X PUT http://localhost:8080/api/products/images \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "productId": 1,
+  "imageUrl": "https://example.com/new-cleaning-image.jpg"
+}'
+```
+**Response**:
+```json
+{
+  "id": 1,
+  "name": "Basic Cleaning Service",
+  "images": [
+    "https://example.com/cleaning1.jpg",
+    "https://example.com/new-cleaning-image.jpg"
+  ]
+}
+```
+
+### Category Controller
+
+#### Get All Categories
+```bash
+curl -X GET http://localhost:8080/api/public/categories?page=1&size=10
+```
+**Response**:
+```json
+{
+  "meta": {
+    "page": 1,
+    "size": 10,
+    "total": 3
+  },
+  "data": [
+    {
+      "id": 1,
+      "name": "Home Care",
+      "description": "Home care services"
+    },
+    {
+      "id": 2,
+      "name": "Cleaning",
+      "description": "Cleaning services"
+    },
+    {
+      "id": 3,
+      "name": "Elderly Care",
+      "description": "Services for the elderly"
+    }
+  ]
+}
+```
+
+#### Get Category by ID
+```bash
+curl -X GET http://localhost:8080/api/public/categories/2
+```
+**Response**:
+```json
+{
+  "id": 2,
+  "name": "Cleaning",
+  "description": "Cleaning services",
+  "products": [
+    {
+      "id": 1,
+      "name": "Basic Cleaning Service",
+      "price": 25.0,
+      "discount": 0
+    },
+    {
+      "id": 2,
+      "name": "Deep Cleaning Service",
+      "price": 40.0,
+      "discount": 5
+    }
+  ]
+}
+```
+
+#### Create Category
+```bash
+curl -X POST http://localhost:8080/api/categories \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "name": "Child Care",
+  "description": "Child care services"
+}'
+```
+**Response**:
+```json
+{
+  "id": 4,
+  "name": "Child Care",
+  "description": "Child care services"
+}
+```
+
+#### Update Category
+```bash
+curl -X PUT http://localhost:8080/api/categories \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "id": 4,
+  "name": "Child & Infant Care",
+  "description": "Child and infant care services"
+}'
+```
+**Response**:
+```json
+{
+  "id": 4,
+  "name": "Child & Infant Care",
+  "description": "Child and infant care services"
+}
+```
+
+#### Delete Category
+```bash
+curl -X DELETE http://localhost:8080/api/categories/4 \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**: HTTP 204 No Content
+
+### Booking Controller
+
+#### Create Booking
 ```bash
 curl -X POST http://localhost:8080/api/bookings \
 -H "Content-Type: application/json" \
@@ -268,9 +860,344 @@ curl -X POST http://localhost:8080/api/bookings \
   "totalPrice": 50.0,
   "bookingStatus": "PENDING",
   "userDTO": { "id": 1, "name": "John Doe" },
-  "products": [{ "id": 1, "name": "Cleaning Service" }]
+  "products": [{ "id": 1, "name": "Basic Cleaning Service" }]
 }
 ```
+
+#### Get Booking by ID
+```bash
+curl -X GET http://localhost:8080/api/bookings/1 \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**:
+```json
+{
+  "id": 1,
+  "address": "123 Main St",
+  "totalHours": 2.5,
+  "totalPrice": 50.0,
+  "bookingStatus": "PENDING",
+  "isPeriodic": false,
+  "note": "Please arrive by 9 AM",
+  "userDTO": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "user@example.com"
+  },
+  "products": [
+    {
+      "id": 1,
+      "name": "Basic Cleaning Service",
+      "price": 25.0
+    }
+  ],
+  "createdAt": "2023-02-15T09:30:00"
+}
+```
+
+#### Update Booking
+```bash
+curl -X PUT http://localhost:8080/api/bookings \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "id": 1,
+  "address": "123 Main St, Apartment 4B",
+  "totalHours": 3.0,
+  "note": "Please arrive by 10 AM"
+}'
+```
+**Response**:
+```json
+{
+  "id": 1,
+  "address": "123 Main St, Apartment 4B",
+  "totalHours": 3.0,
+  "totalPrice": 60.0,
+  "bookingStatus": "PENDING",
+  "isPeriodic": false,
+  "note": "Please arrive by 10 AM",
+  "userDTO": {
+    "id": 1,
+    "name": "John Doe"
+  },
+  "products": [
+    {
+      "id": 1,
+      "name": "Basic Cleaning Service"
+    }
+  ]
+}
+```
+
+#### Update Booking Status
+```bash
+curl -X PUT http://localhost:8080/api/bookings/status \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "bookingId": 1,
+  "status": "CONFIRMED"
+}'
+```
+**Response**:
+```json
+{
+  "id": 1,
+  "address": "123 Main St, Apartment 4B",
+  "totalHours": 3.0,
+  "totalPrice": 60.0,
+  "bookingStatus": "CONFIRMED",
+  "userDTO": {
+    "id": 1,
+    "name": "John Doe"
+  },
+  "products": [
+    {
+      "id": 1,
+      "name": "Basic Cleaning Service"
+    }
+  ]
+}
+```
+
+#### Delete Booking
+```bash
+curl -X DELETE http://localhost:8080/api/bookings/1 \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**: HTTP 204 No Content
+
+### Review Controller
+
+#### Create Review
+```bash
+curl -X POST http://localhost:8080/api/reviews \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-d '{
+  "productId": 1,
+  "userId": 1,
+  "rating": 5,
+  "comment": "Excellent service! Very professional and thorough."
+}'
+```
+**Response**:
+```json
+{
+  "id": 3,
+  "rating": 5,
+  "comment": "Excellent service! Very professional and thorough.",
+  "createdAt": "2023-03-10T15:45:00",
+  "productId": 1,
+  "userDTO": {
+    "id": 1,
+    "name": "John Doe"
+  }
+}
+```
+
+#### Get Reviews
+```bash
+curl -X GET "http://localhost:8080/api/reviews?page=1&size=10&productId=1" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**:
+```json
+{
+  "meta": {
+    "page": 1,
+    "size": 10,
+    "total": 3
+  },
+  "data": [
+    {
+      "id": 1,
+      "rating": 5,
+      "comment": "Great service!",
+      "createdAt": "2023-01-15T10:30:00",
+      "productId": 1,
+      "userDTO": {
+        "id": 1,
+        "name": "John Doe"
+      }
+    },
+    {
+      "id": 2,
+      "rating": 4,
+      "comment": "Very good service",
+      "createdAt": "2023-01-20T14:15:00",
+      "productId": 1,
+      "userDTO": {
+        "id": 2,
+        "name": "Jane Smith"
+      }
+    },
+    {
+      "id": 3,
+      "rating": 5,
+      "comment": "Excellent service! Very professional and thorough.",
+      "createdAt": "2023-03-10T15:45:00",
+      "productId": 1,
+      "userDTO": {
+        "id": 1,
+        "name": "John Doe"
+      }
+    }
+  ]
+}
+```
+
+### File Controller
+
+#### Upload File
+```bash
+curl -X POST http://localhost:8080/api/cloudinary/files \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+-F "file=@/path/to/image.jpg"
+```
+**Response**:
+```json
+{
+  "id": "cl1a2b3c4d5e6",
+  "url": "https://res.cloudinary.com/domicare/image/upload/v1645678901/cl1a2b3c4d5e6.jpg",
+  "name": "image.jpg",
+  "size": 102400,
+  "format": "jpg",
+  "createdAt": "2023-05-15T11:30:00"
+}
+```
+
+#### Get File by Name
+```bash
+curl -X GET "http://localhost:8080/api/cloudinary/files?name=image.jpg" \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**:
+```json
+{
+  "id": "cl1a2b3c4d5e6",
+  "url": "https://res.cloudinary.com/domicare/image/upload/v1645678901/cl1a2b3c4d5e6.jpg",
+  "name": "image.jpg",
+  "size": 102400,
+  "format": "jpg",
+  "createdAt": "2023-05-15T11:30:00"
+}
+```
+
+#### Get File by ID
+```bash
+curl -X GET http://localhost:8080/api/cloudinary/files/cl1a2b3c4d5e6 \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**:
+```json
+{
+  "id": "cl1a2b3c4d5e6",
+  "url": "https://res.cloudinary.com/domicare/image/upload/v1645678901/cl1a2b3c4d5e6.jpg",
+  "name": "image.jpg",
+  "size": 102400,
+  "format": "jpg",
+  "createdAt": "2023-05-15T11:30:00"
+}
+```
+
+#### Get All Files
+```bash
+curl -X GET http://localhost:8080/api/cloudinary/files/all \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**:
+```json
+[
+  {
+    "id": "cl1a2b3c4d5e6",
+    "url": "https://res.cloudinary.com/domicare/image/upload/v1645678901/cl1a2b3c4d5e6.jpg",
+    "name": "image.jpg",
+    "size": 102400,
+    "format": "jpg",
+    "createdAt": "2023-05-15T11:30:00"
+  },
+  {
+    "id": "cl9z8y7x6w5v",
+    "url": "https://res.cloudinary.com/domicare/image/upload/v1645678902/cl9z8y7x6w5v.png",
+    "name": "logo.png",
+    "size": 45678,
+    "format": "png",
+    "createdAt": "2023-05-14T10:15:00"
+  }
+]
+```
+
+#### Delete File
+```bash
+curl -X DELETE http://localhost:8080/api/cloudinary/files/cl1a2b3c4d5e6 \
+-H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+**Response**:
+```json
+{
+  "message": "File deleted successfully"
+}
+```
+
+### Email Sending Controller
+
+#### Send Verification Email
+```bash
+curl -X GET "http://localhost:8080/email/verify?email=user@example.com"
+```
+**Response**:
+```json
+{
+  "message": "Verification email sent successfully to user@example.com"
+}
+```
+
+#### Send Reset Password Email
+```bash
+curl -X GET "http://localhost:8080/email/reset-password?email=user@example.com"
+```
+**Response**:
+```json
+{
+  "message": "Password reset email sent successfully to user@example.com"
+}
+```
+
+### OAuth2 Controller
+
+#### OAuth2 Callback
+```bash
+curl -X GET "http://localhost:8080/auth/callback?code=abc123xyz"
+```
+**Response**:
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "oauth2-refresh-token-123",
+  "user": {
+    "id": 5,
+    "email": "oauth.user@gmail.com",
+    "name": "OAuth User",
+    "avatar": "https://example.com/oauth-avatar.jpg"
+  }
+}
+```
+
+### View Controller
+
+#### Verify Email
+```bash
+curl -X GET "http://localhost:8080/verify-email?token=email-verification-token-123"
+```
+**Response**: HTML page with confirmation message
+
+#### Forgot Password
+```bash
+curl -X GET "http://localhost:8080/forgot-password?token=password-reset-token-456"
+```
+**Response**: HTML page with password reset form
 
 ## Notes
 - **Pagination**: Use `page`, `size`, `sortBy`, and `sortDirection` for paginated endpoints.
