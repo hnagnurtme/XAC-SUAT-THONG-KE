@@ -1203,7 +1203,450 @@ curl -X GET "http://localhost:8080/forgot-password?token=password-reset-token-45
 - **Pagination**: Use `page`, `size`, `sortBy`, and `sortDirection` for paginated endpoints.
 - **File Uploads**: The `/api/cloudinary/files` POST endpoint expects `multipart/form-data` for file uploads (current schema may need correction).
 - **Security**: Ensure proper authentication and authorization for private endpoints. Public endpoints should be used cautiously to avoid data exposure.
-- **Error Handling**: The API spec does not define detailed error responses. Clients should handle standard HTTP status codes (e.g., 400, 401, 404).
+- **Error Handling**: The API implements centralized error handling through a GlobalExceptionHandler. See the "Error Handling" section below for details on response structures.
+
+## Error Handling
+
+The Domicare API implements a centralized error handling mechanism through a `GlobalExceptionHandler`. When errors occur, the API returns a standardized JSON response to help clients properly handle and display error messages.
+
+### Error Response Structure
+
+All error responses follow a consistent JSON format:
+
+```json
+{
+  "status": 422,                     // Numeric error code specific to the API
+  "error": "EMAIL_ALREADY_EXISTS",   // String error identifier
+  "message": "Email already exists"  // Human-readable error message
+}
+```
+
+### HTTP Status Codes
+
+The API uses the following HTTP status codes for errors:
+
+| Status Code | Description                                          |
+|-------------|------------------------------------------------------|
+| 400         | Bad Request - Invalid input, validation errors       |
+| 401         | Unauthorized - Authentication required               |
+| 403         | Forbidden - Insufficient permissions                 |
+| 404         | Not Found - Resource doesn't exist                   |
+| 417         | Expectation Failed - For file upload size issues     |
+| 422         | Unprocessable Entity - Business logic errors         |
+| 500         | Internal Server Error - Unexpected server-side issues |
+
+### Common Error Types
+
+#### Authentication Errors
+
+| Error Code | Message                                    | HTTP Status |
+|------------|--------------------------------------------|-------------|
+| 119        | `BAD_CREDENTIALS` - Invalid password       | 422         |
+| 116        | `INVALID_REFRESH_TOKEN` - Token expired    | 422         |
+| 118        | `EMAIL_NOT_COMFIRMED` - Email not verified | 422         |
+| 102        | `INVALID_AUTHENTICATED` - Invalid token    | 422         |
+
+#### Resource Not Found Errors
+
+| Error Code | Message                                    | HTTP Status |
+|------------|--------------------------------------------|-------------|
+| 112        | `USER_NOT_FOUND` - User doesn't exist      | 422         |
+| 109        | `FILE_NOT_FOUND` - File doesn't exist      | 422         |
+| 211        | `NOT_FOUND_PRODUCT_ID` - Product not found | 422         |
+| 301        | `BOOKING_NOT_FOUND` - Booking not found    | 422         |
+
+#### Duplicate Resource Errors
+
+| Error Code | Message                                       | HTTP Status |
+|------------|-----------------------------------------------|-------------|
+| 108        | `EMAIL_ALREADY_EXISTS` - Email already in use | 422         |
+| 121        | `PRODUCT_NAME_ALREADY_EXISTS` - Duplicate name| 422         |
+| 202        | `CATEGORY_ALREADY_EXISTS` - Duplicate category| 422         |
+| 501        | `ALREADY_REVIEWED` - User already reviewed    | 422         |
+
+#### Validation Errors
+
+For request validation failures (via `@Valid` annotation), the API returns:
+
+```json
+{
+  "status": 400,
+  "error": "Validation Error",
+  "message": "Email must be a valid email address"
+}
+```
+
+When multiple validation errors occur, all errors are returned in the message:
+
+```json
+{
+  "status": 400,
+  "error": "Validation Error",
+  "message": "[Email must be a valid email address, Password must be at least 8 characters]"
+}
+```
+
+#### File Upload Errors
+
+For file upload issues:
+
+```json
+{
+  "message": "File quá lớn!"
+}
+```
+
+### Error Handling Best Practices
+
+1. **Always check HTTP status codes** first to determine the error category
+2. **Parse the error response** to extract the specific `status`, `error`, and `message`
+3. **Display user-friendly messages** based on the error code
+4. **Log unexpected errors** (500) for debugging purposes
+5. **Implement appropriate retry logic** for network errors
+6. **Handle expired authentication tokens** by refreshing or redirecting to login
+
+## Endpoint-Specific Error Handling
+
+### Authentication and User Management
+
+#### Login (`POST /login`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 117 | `EMAIL_NOT_FOUND` | 422 | Email address doesn't exist in the system |
+| 118 | `EMAIL_NOT_COMFIRMED` | 422 | Email hasn't been verified yet |
+| 119 | `BAD_CREDENTIALS` | 422 | Password is incorrect |
+| 400 | `Validation Error` | 400 | Email format is invalid or required fields are missing |
+
+#### Registration (`POST /register`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 108 | `EMAIL_ALREADY_EXISTS` | 422 | Email is already registered |
+| 400 | `Validation Error` | 400 | Password doesn't meet requirements (must have at least one uppercase, lowercase, and number) or email format is invalid |
+
+#### Token Refresh (`POST /refresh-token`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 116 | `INVALID_REFRESH_TOKEN` | 422 | Refresh token is expired or invalid |
+| 400 | `Validation Error` | 400 | Refresh token is missing |
+
+#### Password Reset (`POST /reset-password`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 117 | `EMAIL_NOT_FOUND` | 422 | Email not found in the system |
+| 400 | `Validation Error` | 400 | Required fields are missing |
+
+### User Controller Endpoints
+
+#### Get Users (`GET /users`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to view user list |
+
+#### Get User by ID (`GET /users/{id}`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 112 | `USER_NOT_FOUND` | 422 | User with the specified ID doesn't exist |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to view other users |
+
+#### Update User (`PUT /users`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 112 | `USER_NOT_FOUND` | 422 | User with the specified ID doesn't exist |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to update user information |
+| 400 | `Validation Error` | 400 | Required fields are missing or invalid |
+
+#### Update User Roles (`PUT /users/roles`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 112 | `USER_NOT_FOUND` | 422 | User with the specified ID doesn't exist |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to update roles |
+| 114 | `ADMIN_UNAUTHORIZED` | 403 | Only super admins can update admin roles |
+| 400 | `Validation Error` | 400 | Missing user ID or role IDs |
+
+#### Delete User (`DELETE /users/{id}`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 112 | `USER_NOT_FOUND` | 422 | User with the specified ID doesn't exist |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to delete users |
+| 114 | `UNAUTHORIZED_ADMIN_DELETE_OTHER_ADMINS` | 403 | Regular admins cannot delete other admins |
+
+### Role Controller Endpoints
+
+#### Get Roles (`GET /roles`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to view roles |
+
+#### Create Role (`POST /roles`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to create roles |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 400 | `Validation Error` | 400 | Required fields are missing or invalid |
+| 103 | `ROLE_ALREADY_EXISTS` | 422 | Role with the same name already exists |
+
+#### Update Role (`PUT /roles`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 113 | `NOT_FOUND_ROLE` | 422 | Role with the specified ID doesn't exist |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to update roles |
+| 400 | `Validation Error` | 400 | Required fields are missing or invalid |
+
+#### Delete Role (`DELETE /roles/{id}`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 113 | `NOT_FOUND_ROLE` | 422 | Role with the specified ID doesn't exist |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to delete roles |
+
+### Product Controller Endpoints
+
+#### Get Products (`GET /api/public/products`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 400 | `Validation Error` | 400 | Invalid pagination parameters |
+
+#### Get Product by ID (`GET /api/public/products/{id}`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 211 | `NOT_FOUND_PRODUCT_ID` | 422 | Product with the specified ID doesn't exist |
+
+#### Create Product (`POST /api/products`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to create products |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 400 | `Validation Error` | 400 | Required fields are missing or invalid |
+| 121 | `PRODUCT_NAME_ALREADY_EXISTS` | 422 | Product with the same name already exists |
+| 201 | `CATEGORY_NOT_FOUND` | 422 | Specified category doesn't exist |
+
+#### Update Product (`PUT /api/products`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 211 | `NOT_FOUND_PRODUCT_ID` | 422 | Product with the specified ID doesn't exist |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to update products |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 400 | `Validation Error` | 400 | Required fields are missing or invalid |
+| 121 | `PRODUCT_NAME_ALREADY_EXISTS` | 422 | Another product with the same name already exists |
+| 201 | `CATEGORY_NOT_FOUND` | 422 | Specified category doesn't exist |
+
+#### Delete Product (`DELETE /api/products/{id}`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 211 | `NOT_FOUND_PRODUCT_ID` | 422 | Product with the specified ID doesn't exist |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to delete products |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+
+#### Upload Product Image (`PUT /api/products/images`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 211 | `NOT_FOUND_PRODUCT_ID` | 422 | Product with the specified ID doesn't exist |
+| 109 | `FILE_NOT_FOUND` | 422 | Referenced file doesn't exist |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to update product images |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 400 | `Validation Error` | 400 | Required fields are missing or invalid |
+
+### Category Controller Endpoints
+
+#### Get Categories (`GET /api/public/categories`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 400 | `Validation Error` | 400 | Invalid pagination parameters |
+
+#### Get Category by ID (`GET /api/public/categories/{id}`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 201 | `CATEGORY_NOT_FOUND` | 422 | Category with the specified ID doesn't exist |
+
+#### Create Category (`POST /api/categories`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to create categories |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 400 | `Validation Error` | 400 | Required fields are missing or invalid |
+| 202 | `CATEGORY_ALREADY_EXISTS` | 422 | Category with the same name already exists |
+
+#### Update Category (`PUT /api/categories`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 201 | `CATEGORY_NOT_FOUND` | 422 | Category with the specified ID doesn't exist |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to update categories |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 400 | `Validation Error` | 400 | Required fields are missing or invalid |
+| 202 | `CATEGORY_ALREADY_EXISTS` | 422 | Category with the same name already exists |
+
+#### Delete Category (`DELETE /api/categories/{id}`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 201 | `CATEGORY_NOT_FOUND` | 422 | Category with the specified ID doesn't exist |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to delete categories |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+
+### Booking Controller Endpoints
+
+#### Create Booking (`POST /api/bookings`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 400 | `Validation Error` | 400 | Required fields are missing or invalid |
+| 112 | `USER_NOT_FOUND` | 422 | Specified user doesn't exist |
+| 211 | `NOT_FOUND_PRODUCT_ID` | 422 | One or more products don't exist |
+
+#### Get Booking by ID (`GET /api/bookings/{id}`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 301 | `BOOKING_NOT_FOUND` | 422 | Booking with the specified ID doesn't exist |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to view the booking |
+
+#### Update Booking (`PUT /api/bookings`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 301 | `BOOKING_NOT_FOUND` | 422 | Booking with the specified ID doesn't exist |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to update the booking |
+| 400 | `Validation Error` | 400 | Required fields are missing or invalid |
+
+#### Update Booking Status (`PUT /api/bookings/status`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 301 | `BOOKING_NOT_FOUND` | 422 | Booking with the specified ID doesn't exist |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to update the booking status |
+| 302 | `BOOKING_STATUS_INVALID` | 422 | Invalid booking status provided |
+| 400 | `Validation Error` | 400 | Required fields are missing |
+
+#### Delete Booking (`DELETE /api/bookings/{id}`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 301 | `BOOKING_NOT_FOUND` | 422 | Booking with the specified ID doesn't exist |
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to delete the booking |
+
+### Review Controller Endpoints
+
+#### Get Reviews (`GET /api/reviews`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 400 | `Validation Error` | 400 | Invalid pagination parameters |
+
+#### Create Review (`POST /api/reviews`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 400 | `Validation Error` | 400 | Required fields are missing or invalid |
+| 112 | `USER_NOT_FOUND` | 422 | Specified user doesn't exist |
+| 211 | `NOT_FOUND_PRODUCT_ID` | 422 | Specified product doesn't exist |
+| 501 | `ALREADY_REVIEWED` | 422 | User has already reviewed this product |
+
+### File Controller Endpoints
+
+#### Upload File (`POST /api/cloudinary/files`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 417 | `File quá lớn!` | 417 | File exceeds the maximum allowed size |
+| 400 | `Validation Error` | 400 | No file provided or invalid file format |
+
+#### Get File by Name (`GET /api/cloudinary/files?name=`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 109 | `FILE_NOT_FOUND` | 422 | File with the specified name doesn't exist |
+| 400 | `Validation Error` | 400 | Name parameter is missing |
+
+#### Get File by ID (`GET /api/cloudinary/files/{id}`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 109 | `FILE_NOT_FOUND` | 422 | File with the specified ID doesn't exist |
+
+#### Delete File (`DELETE /api/cloudinary/files/{id}`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 102 | `INVALID_AUTHENTICATED` | 401 | Invalid or expired authentication token |
+| 109 | `FILE_NOT_FOUND` | 422 | File with the specified ID doesn't exist |
+| 113 | `UNAUTHORIZED` | 403 | User doesn't have permission to delete files |
+
+### Email Sending Controller Endpoints
+
+#### Send Verification Email (`GET /email/verify`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 117 | `EMAIL_NOT_FOUND` | 422 | Email not found in the system |
+| 400 | `Validation Error` | 400 | Email parameter is missing |
+| 500 | `INTERNAL_SERVER_ERROR` | 500 | Email sending failed (server configuration issue) |
+
+#### Send Reset Password Email (`GET /email/reset-password`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 117 | `EMAIL_NOT_FOUND` | 422 | Email not found in the system |
+| 400 | `Validation Error` | 400 | Email parameter is missing |
+| 500 | `INTERNAL_SERVER_ERROR` | 500 | Email sending failed (server configuration issue) |
+
+### OAuth2 Controller Endpoints
+
+#### OAuth2 Callback (`GET /auth/callback`)
+
+| Error Code | Error Message | HTTP Status | Description |
+|------------|---------------|-------------|-------------|
+| 400 | `Validation Error` | 400 | Code parameter is missing or invalid |
+| 500 | `INTERNAL_SERVER_ERROR` | 500 | OAuth authentication failed |
+
+### Error Handling Best Practices for Client Applications
+
+1. **Authenticate properly**: Ensure your authentication token is sent correctly with all requests
+2. **Validate input data**: Perform client-side validation before sending data to the server
+3. **Handle common errors**:
+   - 401/403 errors: Prompt user to log in again or inform about insufficient permissions
+   - 422 errors: Display specific error messages from the API response
+   - 400 errors: Show validation errors to help users correct their input
+   - 500 errors: Display a generic error message and consider logging the issue
+4. **Refresh tokens**: Automatically refresh tokens when they expire
+5. **Pagination handling**: Validate page and size parameters when making paginated requests
+6. **File upload size**: Check file size before uploading to avoid `417` errors
+7. **Email verification**: Guide users to verify their email after registration
 
 ## Contact
 For further details or support, refer to the Domicare application documentation or contact the development team.
